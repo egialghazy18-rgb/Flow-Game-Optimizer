@@ -1,29 +1,27 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 void main() => runApp(const FlowApp());
 
-const ink = Color(0xFF17233B);
-const blue = Color(0xFF4263EB);
-const muted = Color(0xFF78839A);
-const canvas = Color(0xFFF5F7FC);
+const bg = Color(0xFFF4F7FB);
+const ink = Color(0xFF172238);
+const muted = Color(0xFF7C8798);
+const blue = Color(0xFF526DDF);
 
 class FlowApp extends StatelessWidget {
   const FlowApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flow Game Optimizer',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: canvas,
-        colorScheme: ColorScheme.fromSeed(seedColor: blue),
-        fontFamily: 'Roboto',
-      ),
-      home: const FlowHome(),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Flow Game Optimizer',
+    theme: ThemeData(
+      useMaterial3: true,
+      scaffoldBackgroundColor: bg,
+      colorScheme: ColorScheme.fromSeed(seedColor: blue),
+    ),
+    home: const FlowHome(),
+  );
 }
 
 class FlowHome extends StatefulWidget {
@@ -35,236 +33,583 @@ class FlowHome extends StatefulWidget {
 
 class _FlowHomeState extends State<FlowHome> {
   int tab = 0;
-  int score = 0;
-  int target = 0;
-
-  final pages = const ['Home', 'Games', 'Aim Lab', 'Settings'];
+  String profile = 'Performance';
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(
-          index: tab,
-          children: [
-            homePage(),
-            gamesPage(),
-            aimPage(),
-            settingsPage(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFFE8EDFF),
-        onDestinationSelected: (v) => setState(() => tab = v),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.sports_esports_rounded), label: 'Games'),
-          NavigationDestination(icon: Icon(Icons.gps_fixed_rounded), label: 'Aim Lab'),
-          NavigationDestination(icon: Icon(Icons.tune_rounded), label: 'Settings'),
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: IndexedStack(
+        index: tab,
+        children: [
+          homePage(),
+          const GamesPage(),
+          const AimPage(),
+          settingsPage(),
         ],
       ),
-    );
-  }
+    ),
+    bottomNavigationBar: NavigationBar(
+      selectedIndex: tab,
+      onDestinationSelected: (v) => setState(() => tab = v),
+      backgroundColor: Colors.white,
+      indicatorColor: const Color(0xFFE6EBFF),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.grid_view_rounded),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.sports_esports_rounded),
+          label: 'Games',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.gps_fixed_rounded),
+          label: 'Aim Lab',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.tune_rounded),
+          label: 'Settings',
+        ),
+      ],
+    ),
+  );
 
   Widget heading(String title, String subtitle) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(title, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.8)),
+      Text(
+        title,
+        style: const TextStyle(
+          fontSize: 27,
+          fontWeight: FontWeight.w800,
+          color: ink,
+          letterSpacing: -0.8,
+        ),
+      ),
       const SizedBox(height: 5),
       Text(subtitle, style: const TextStyle(color: muted, fontSize: 13)),
     ],
   );
 
-  Widget homePage() => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-    children: [
-      Row(children: [
-        Container(
-          width: 46, height: 46,
-          decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(15)),
-          child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 29),
+  Widget glassCard(Widget child) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .94),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.white, width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: ink.withValues(alpha: .045),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
         ),
-        const SizedBox(width: 12),
-        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('FLOW', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 2, color: ink)),
-          Text('GAME OPTIMIZER', style: TextStyle(fontSize: 10, color: muted, letterSpacing: 1.5)),
-        ])),
-        const Icon(Icons.circle, color: Color(0xFF39BD87), size: 10),
-        const SizedBox(width: 6),
-        const Text('Ready', style: TextStyle(color: muted, fontSize: 12)),
-      ]),
+      ],
+    ),
+    child: child,
+  );
+
+  Widget homePage() => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+    children: [
+      Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF202E4C), blue],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'FLOW',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: ink,
+                  ),
+                ),
+                Text(
+                  'GAME OPTIMIZER',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: muted,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.circle, color: Color(0xFF39BD87), size: 10),
+          const SizedBox(width: 6),
+          const Text('Ready', style: TextStyle(color: muted, fontSize: 12)),
+        ],
+      ),
       const SizedBox(height: 28),
       heading('Play in your flow.', 'Your gaming space, simplified.'),
       const SizedBox(height: 20),
       Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF243B73), Color(0xFF4263EB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(26),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.bolt_rounded, color: Color(0xFFBFD0FF), size: 27),
-          const SizedBox(height: 15),
-          const Text('READY WHEN YOU ARE', style: TextStyle(color: Color(0xFFCFD9FF), fontSize: 10, letterSpacing: 1.7, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Make every session\\nyour own.', style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w800, height: 1.2)),
-          const SizedBox(height: 10),
-          const Text('Tools and practice in one place.', style: TextStyle(color: Color(0xFFE0E7FF), fontSize: 13)),
-          const SizedBox(height: 20),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: ink),
-            onPressed: () => setState(() => tab = 2),
-            child: const Text('Open Aim Lab'),
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF263858), Color(0xFF536FE0)],
           ),
-        ]),
-      ),
-      const SizedBox(height: 25),
-      const Text('QUICK ACCESS', style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-      const SizedBox(height: 13),
-      Row(children: [
-        Expanded(child: quickCard(Icons.sports_esports_rounded, 'Game library', 'Your installed games', () => setState(() => tab = 1))),
-        const SizedBox(width: 12),
-        Expanded(child: quickCard(Icons.gps_fixed_rounded, 'Aim training', 'Practice your accuracy', () => setState(() => tab = 2))),
-      ]),
-      const SizedBox(height: 24),
-      Container(
-        padding: const EdgeInsets.all(17),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: const Row(children: [
-          Icon(Icons.info_outline_rounded, color: blue, size: 25),
-          SizedBox(width: 12),
-          Expanded(child: Text('Flow provides practice tools and device guidance. Actual game performance depends on your device and game.', style: TextStyle(color: muted, fontSize: 12, height: 1.5))),
-        ]),
-      ),
-    ],
-  );
-
-  Widget quickCard(IconData icon, String title, String subtitle, VoidCallback onTap) =>
-    Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(17),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(icon, color: blue, size: 25),
-            const SizedBox(height: 17),
-            Text(title, style: const TextStyle(color: ink, fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 5),
-            Text(subtitle, style: const TextStyle(color: muted, fontSize: 11)),
-          ]),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'YOUR GAMING PROFILE',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              profile,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 29,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ['Balanced', 'Performance', 'Battery Saver']
+                  .map(
+                    (p) => ChoiceChip(
+                      label: Text(p),
+                      selected: profile == p,
+                      onSelected: (_) => setState(() => profile = p),
+                      selectedColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: .12),
+                      labelStyle: TextStyle(
+                        color: profile == p ? ink : Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                      showCheckmark: false,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ),
       ),
-    );
-
-  Widget gamesPage() => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      heading('Game library', 'Your games, all in one place.'),
-      const SizedBox(height: 24),
-      Container(
-        padding: const EdgeInsets.all(25),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-        child: Column(children: [
-          Container(
-            height: 74, width: 74,
-            decoration: BoxDecoration(color: const Color(0xFFEDF1FF), borderRadius: BorderRadius.circular(23)),
-            child: const Icon(Icons.sports_esports_rounded, size: 38, color: blue),
-          ),
-          const SizedBox(height: 18),
-          const Text('Game detection coming next', style: TextStyle(color: ink, fontWeight: FontWeight.bold, fontSize: 17)),
-          const SizedBox(height: 8),
-          const Text('This starter version does not yet scan installed game packages. The next step is Android integration to detect launchable games and open them safely.', textAlign: TextAlign.center, style: TextStyle(color: muted, fontSize: 13, height: 1.6)),
-          const SizedBox(height: 18),
-          OutlinedButton.icon(onPressed: () => setState(() => tab = 3), icon: const Icon(Icons.info_outline), label: const Text('View app details')),
-        ]),
-      ),
-    ],
-  );
-
-  Widget aimPage() => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      heading('Aim Lab', 'A small reaction and accuracy drill.'),
-      const SizedBox(height: 18),
-      Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(23)),
-        child: Row(children: [
-          Expanded(child: stat('SCORE', '$score')),
-          Expanded(child: stat('TARGETS', '$target')),
-          Expanded(child: stat('MODE', 'TAP')),
-        ]),
-      ),
-      const SizedBox(height: 18),
-      const Text('Tap the target to score points. This is an in-app training demo, not an overlay inside other games.', style: TextStyle(color: muted, fontSize: 13, height: 1.5)),
-      const SizedBox(height: 14),
-      Container(
-        height: 340,
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFE7EBF4))),
-        child: LayoutBuilder(builder: (context, c) => Stack(children: [
-          const Positioned(left: 18, top: 18, child: Text('TRAINING ZONE', style: TextStyle(color: muted, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold))),
-          Positioned(
-            left: 20 + ((target * 53) % 190).toDouble().clamp(0, (c.maxWidth - 78).clamp(0, 500)),
-            top: 65 + ((target * 71) % 205).toDouble().clamp(0, (c.maxHeight - 125).clamp(0, 300)),
-            child: GestureDetector(
-              onTap: () => setState(() { score += 10; target++; }),
-              child: Container(
-                width: 54, height: 54,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFE9EDFF), border: Border.all(color: blue, width: 3)),
-                child: const Center(child: Icon(Icons.gps_fixed_rounded, color: blue, size: 28)),
+      const SizedBox(height: 22),
+      Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => setState(() => tab = 2),
+              child: glassCard(
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.gps_fixed_rounded, color: blue, size: 28),
+                    SizedBox(height: 14),
+                    Text(
+                      'FPS Arena',
+                      style: TextStyle(
+                        color: ink,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Train your aim',
+                      style: TextStyle(color: muted, fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          Positioned(bottom: 16, left: 0, right: 0, child: Center(child: Text('TAP THE TARGET  •  +10 POINTS', style: TextStyle(color: muted, fontSize: 10, letterSpacing: 1)))),
-        ])),
+          const SizedBox(width: 12),
+          Expanded(
+            child: InkWell(
+              onTap: () => setState(() => tab = 1),
+              child: glassCard(
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.sports_esports_rounded,
+                      color: blue,
+                      size: 28,
+                    ),
+                    SizedBox(height: 14),
+                    Text(
+                      'Game Library',
+                      style: TextStyle(
+                        color: ink,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Installed apps',
+                      style: TextStyle(color: muted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 14),
-      OutlinedButton.icon(
-        onPressed: () => setState(() { score = 0; target = 0; }),
-        icon: const Icon(Icons.refresh_rounded),
-        label: const Text('Reset training'),
+      const SizedBox(height: 20),
+      glassCard(
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Session tools',
+              style: TextStyle(
+                color: ink,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Choose a profile to match your session. Profiles are presets only; they do not overclock CPU/GPU or guarantee higher FPS.',
+              style: TextStyle(color: muted, height: 1.5, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     ],
   );
-
-  Widget stat(String label, String value) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(label, style: const TextStyle(color: Color(0xFFBFCBF0), fontSize: 9, letterSpacing: 1.2)),
-    const SizedBox(height: 7),
-    Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-  ]);
 
   Widget settingsPage() => ListView(
     padding: const EdgeInsets.all(20),
     children: [
-      heading('Settings', 'Your Flow experience.'),
-      const SizedBox(height: 22),
-      settingTile(Icons.bolt_rounded, 'Flow Game Optimizer', 'Version 1.0.0'),
-      settingTile(Icons.phone_android_rounded, 'Device tools', 'Performance monitoring is not enabled yet'),
-      settingTile(Icons.privacy_tip_outlined, 'Privacy', 'No account or sign-in required'),
-      settingTile(Icons.info_outline_rounded, 'About Flow', 'Independent gaming companion and aim practice app'),
+      heading('Settings', 'Your app preferences.'),
+      const SizedBox(height: 20),
+      glassCard(
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'About Flow',
+              style: TextStyle(
+                color: ink,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Flow Game Optimizer • 1.1',
+              style: TextStyle(color: muted),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Includes an aim-training mini-game and game-library placeholder. Native Android integration is required to discover and launch installed games.',
+              style: TextStyle(color: muted, height: 1.5, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class GamesPage extends StatelessWidget {
+  const GamesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      const Text(
+        'Game Library',
+        style: TextStyle(
+          fontSize: 27,
+          fontWeight: FontWeight.w800,
+          color: ink,
+        ),
+      ),
+      const SizedBox(height: 5),
+      const Text(
+        'Your game shortcuts in one place.',
+        style: TextStyle(color: muted, fontSize: 13),
+      ),
+      const SizedBox(height: 20),
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.sports_esports_rounded, size: 42, color: blue),
+            SizedBox(height: 12),
+            Text(
+              'Native integration needed',
+              style: TextStyle(fontWeight: FontWeight.w800, color: ink),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This page is a UI placeholder. Listing and launching installed Android apps requires a native Android bridge and package visibility configuration.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: muted, height: 1.5, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class AimPage extends StatefulWidget {
+  const AimPage({super.key});
+
+  @override
+  State<AimPage> createState() => _AimPageState();
+}
+
+class _AimPageState extends State<AimPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+  final random = math.Random();
+  Offset target = const Offset(.5, .45);
+  int shots = 0;
+  int hits = 0;
+  bool running = true;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )
+      ..addListener(() {
+        if (running && mounted) {
+          setState(() {
+            final t = controller.value * math.pi * 2;
+            target = Offset(
+              .5 + .31 * math.cos(t),
+              .5 + .31 * math.sin(t * .77),
+            );
+          });
+        }
+      })
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void shoot(Offset local, Size size) {
+    if (!running) return;
+    final p = Offset(local.dx / size.width, local.dy / size.height);
+    setState(() {
+      shots++;
+      if ((p - target).distance < .105) {
+        hits++;
+        target = Offset(
+          .12 + random.nextDouble() * .76,
+          .15 + random.nextDouble() * .7,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      const Text(
+        'FPS Arena',
+        style: TextStyle(
+          fontSize: 27,
+          fontWeight: FontWeight.w800,
+          color: ink,
+        ),
+      ),
+      const SizedBox(height: 5),
+      const Text(
+        'Drag or tap to train your aim.',
+        style: TextStyle(color: muted, fontSize: 13),
+      ),
       const SizedBox(height: 18),
-      const Text('Flow cannot guarantee FPS increases or change the internal behavior of third-party games. Use only supported Android features.', style: TextStyle(color: muted, fontSize: 12, height: 1.6)),
+      Row(
+        children: [
+          _stat('SHOTS', '$shots'),
+          const SizedBox(width: 8),
+          _stat('HITS', '$hits'),
+          const SizedBox(width: 8),
+          _stat('ACCURACY', '${shots == 0 ? 0 : (hits * 100 / shots).round()}%'),
+        ],
+      ),
+      const SizedBox(height: 16),
+      SizedBox(
+        height: 360,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
+            return GestureDetector(
+              onPanDown: (d) => shoot(d.localPosition, size),
+              onPanUpdate: (d) => shoot(d.localPosition, size),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: Container(
+                  color: const Color(0xFF263858),
+                  child: Stack(
+                    children: [
+                      CustomPaint(
+                        size: size,
+                        painter: ArenaGridPainter(),
+                      ),
+                      Positioned(
+                        left: target.dx * size.width - 22,
+                        top: target.dy * size.height - 22,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(
+                              0xFFEF6F79,
+                            ).withValues(alpha: .18),
+                            border: Border.all(
+                              color: const Color(0xFFFF9AA3),
+                              width: 2,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.circle,
+                              color: Color(0xFFFF9AA3),
+                              size: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Positioned(
+                        left: 15,
+                        top: 15,
+                        child: Text(
+                          'TRAINING RANGE / 01',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            letterSpacing: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      const SizedBox(height: 14),
+      Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => setState(() => running = !running),
+              child: Text(running ? 'Pause' : 'Resume'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton(
+              onPressed: () => setState(() {
+                shots = 0;
+                hits = 0;
+                target = const Offset(.5, .45);
+              }),
+              child: const Text('Reset'),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
+      const Text(
+        'Training simulation only; it does not change aim settings in other games.',
+        style: TextStyle(color: muted, fontSize: 11, height: 1.5),
+      ),
     ],
   );
 
-  Widget settingTile(IconData icon, String title, String subtitle) => Container(
-    margin: const EdgeInsets.only(bottom: 11),
-    padding: const EdgeInsets.all(17),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-    child: Row(children: [
-      Container(width: 43, height: 43, decoration: BoxDecoration(color: const Color(0xFFEDF1FF), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: blue)),
-      const SizedBox(width: 13),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(color: ink, fontWeight: FontWeight.bold, fontSize: 14)),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: muted, fontSize: 11)),
-      ])),
-    ]),
+  Widget _stat(String label, String value) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              color: ink,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: muted,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    ),
   );
+}
+
+class ArenaGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: .07)
+      ..strokeWidth = 1;
+    for (double x = 0; x < size.width; x += 28) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
+    }
+    for (double y = 0; y < size.height; y += 28) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
