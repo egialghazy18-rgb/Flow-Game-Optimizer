@@ -24,8 +24,11 @@ jobs:
           channel: stable
           cache: true
 
+       
       - name: Generate Android project
-        run: flutter create --platforms=android --project-name flow_game_optimizer --org com.egii.flow .
+        run: |
+          flutter create --platforms=android --project-name flow_game_optimizer --org com.egii.flow .
+          rm -f test/widget_test.dart
 
       - name: Install packages
         run: flutter pub get
