@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'dart:ui' show FontFeature;
 import 'package:flutter/services.dart';
 
 void main() => runApp(const FlowApp());
@@ -516,16 +515,16 @@ final found = (raw ?? [])
 .map((m) => GameInfo.fromMap(m))
 .toList()
 ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-if (mounted) setState(() {
+if (mounted) { setState(() {
 games = found;
 loading = false;
 error = null;
-});
+}); }
 } catch (e) {
-if (mounted) setState(() {
+if (mounted) { setState(() {
 loading = false;
 error = 'Could not load installed apps.';
-});
+}); }
 }
 }
 
