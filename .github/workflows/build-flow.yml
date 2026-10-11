@@ -164,6 +164,8 @@ jobs:
       - name: Add Flow overlay service
         shell: bash
         run: |
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          cp assets/flow_logo.jpg android/app/src/main/res/drawable-nodpi/flow_logo.jpg
           cat > android/app/src/main/kotlin/com/egii/flowv2/flow_game_optimizer_v2/FlowOverlayService.kt <<'KOTLIN'
           package com.egii.flowv2.flow_game_optimizer_v2
 
@@ -174,6 +176,7 @@ jobs:
           import android.graphics.PixelFormat
           import android.graphics.Typeface
           import android.graphics.drawable.GradientDrawable
+          import android.widget.ImageView
           import android.os.Build
           import android.os.IBinder
           import android.os.SystemClock
@@ -188,7 +191,7 @@ jobs:
 
           class FlowOverlayService : Service() {
             private lateinit var wm: WindowManager
-            private var bubble: TextView? = null
+            private var bubble: ImageView? = null
             private var panel: LinearLayout? = null
             private var focus = false
             private val startedAt = SystemClock.elapsedRealtime()
@@ -218,16 +221,17 @@ jobs:
               ).apply { this.gravity = gravity }
 
             private fun showBubble() {
-              val v = TextView(this).apply {
-                text = "F"
-                textSize = 22f
-                gravity = Gravity.CENTER
-                setTextColor(Color.WHITE)
-                typeface = Typeface.DEFAULT_BOLD
+              if (bubble != null) return
+              val v = ImageView(this).apply {
+                val logoId = resources.getIdentifier("flow_logo", "drawable", packageName)
+                if (logoId != 0) setImageResource(logoId)
+                else setImageResource(android.R.drawable.ic_menu_view)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setPadding(3, 3, 3, 3)
                 background = GradientDrawable().apply {
                   shape = GradientDrawable.OVAL
-                  setColor(Color.rgb(20, 105, 255))
-                  setStroke(3, Color.rgb(110, 190, 255))
+                  setColor(Color.rgb(8, 13, 28))
+                  setStroke(2, Color.rgb(0, 145, 255))
                 }
                 setOnClickListener {
                   if (panel == null) showPanel() else hidePanel()
@@ -273,28 +277,102 @@ jobs:
               wm.addView(v, lp)
             }
 
+            private fun hideBubble() {
+              bubble?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+              bubble = null
+            }
+
             private fun showPanel() {
+              val blue = Color.rgb(0, 145, 255)
+              val muted = Color.rgb(155, 174, 202)
+
               val root = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(18, 14, 18, 14)
+                setPadding(18, 18, 18, 16)
                 background = GradientDrawable().apply {
-                  cornerRadius = 22f
-                  setColor(Color.rgb(20, 26, 38))
-                  setStroke(2, Color.rgb(40, 115, 255))
+                  cornerRadius = 26f
+                  setColor(Color.rgb(10, 15, 28))
+                  setStroke(2, Color.rgb(28, 91, 166))
                 }
               }
-              fun text(value: String, size: Float = 14f) =
+
+              fun label(value: String, size: Float, color: Int, bold: Boolean = false) =
                 TextView(this).apply {
-                  this.text = value
+                  text = value
                   textSize = size
-                  setTextColor(Color.WHITE)
-                  setPadding(0, 6, 0, 6)
+                  setTextColor(color)
+                  if (bold) typeface = Typeface.DEFAULT_BOLD
+                  setPadding(0, 3, 0, 3)
                 }
 
-              root.addView(text("FLOW  •  GAME PANEL", 18f))
-              val timer = text("Sesi: 00:00:00")
+              fun tile(title: String, value: String): LinearLayout =
+                LinearLayout(this).apply {
+                  orientation = LinearLayout.VERTICAL
+                  setPadding(12, 10, 12, 10)
+                  background = GradientDrawable().apply {
+                    cornerRadius = 16f
+                    setColor(Color.rgb(19, 29, 47))
+                    setStroke(1, Color.rgb(36, 57, 85))
+                  }
+                  addView(label(title, 11f, muted, true))
+                  addView(label(value, 17f, Color.WHITE, true))
+                }
+
+              fun action(title: String, primary: Boolean = false, onTap: () -> Unit) =
+                TextView(this).apply {
+                  text = title
+                  textSize = 13f
+                  gravity = Gravity.CENTER
+                  typeface = Typeface.DEFAULT_BOLD
+                  setTextColor(if (primary) Color.WHITE else Color.rgb(205, 222, 245))
+                  setPadding(10, 13, 10, 13)
+                  background = GradientDrawable().apply {
+                    cornerRadius = 13f
+                    setColor(if (primary) Color.rgb(0, 104, 220)
+                             else Color.rgb(24, 35, 54))
+                    setStroke(1, if (primary) blue else Color.rgb(48, 69, 98))
+                  }
+                  setOnClickListener { onTap() }
+                }
+
+              val header = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+              }
+              val logo = ImageView(this).apply {
+                val id = resources.getIdentifier("flow_logo", "drawable", packageName)
+                if (id != 0) setImageResource(id)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                background = GradientDrawable().apply {
+                  cornerRadius = 13f
+                  setColor(Color.BLACK)
+                }
+              }
+              header.addView(logo, LinearLayout.LayoutParams(56, 56))
+
+              val titleBox = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(12, 0, 0, 0)
+                addView(label("FLOW", 22f, Color.WHITE, true))
+                addView(label("GAME BOOSTER", 11f, blue, true))
+              }
+              header.addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
+              header.addView(action("×") { hidePanel() },
+                LinearLayout.LayoutParams(42, 42))
+              root.addView(header)
+
+              val divider = View(this).apply {
+                setBackgroundColor(Color.rgb(35, 54, 81))
+              }
+              root.addView(divider, LinearLayout.LayoutParams(-1, 1).apply {
+                topMargin = 14
+                bottomMargin = 14
+              })
+
+              root.addView(label("SESI BERJALAN", 11f, muted, true))
+              val timer = label("00:00:00", 30f, Color.WHITE, true)
               root.addView(timer)
-              root.addView(text("FPS: Tidak tersedia"))
+              root.addView(label("Waktu sesi overlay", 12f, muted))
 
               val battery = registerReceiver(
                 null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -303,38 +381,67 @@ jobs:
               val scale = battery?.getIntExtra("scale", -1) ?: -1
               val temp = battery?.getIntExtra("temperature", -1) ?: -1
               val pct = if (level >= 0 && scale > 0)
-                "${level * 100 / scale}%" else "Tidak tersedia"
+                "${level * 100 / scale}%" else "--"
               val tempText = if (temp >= 0)
-                String.format("%.1f°C", temp / 10.0) else "Tidak tersedia"
+                String.format("%.1f°C", temp / 10.0) else "--"
 
-              root.addView(text("Baterai: $pct"))
-              root.addView(text("Suhu baterai: $tempText"))
-              val focusLabel = text("Mode fokus: ${if (focus) "Aktif" else "Nonaktif"}")
+              val stats = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 14, 0, 10)
+              }
+              stats.addView(tile("BATTERY", pct),
+                LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 6 })
+              stats.addView(tile("SUHU BATERAI", tempText),
+                LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 6 })
+              root.addView(stats)
+
+              val focusLabel = label(
+                "●  MODE FOKUS  ·  ${if (focus) "AKTIF" else "NONAKTIF"}",
+                12f, if (focus) blue else muted, true
+              )
               root.addView(focusLabel)
-              root.addView(Button(this).apply {
-                text = "Toggle mode fokus"
-                setOnClickListener {
-                  focus = !focus
-                  focusLabel.text = "Mode fokus: ${if (focus) "Aktif" else "Nonaktif"}"
-                }
+              root.addView(label("FPS  ·  Belum tersedia", 12f, muted))
+
+              root.addView(action(
+                if (focus) "Matikan mode fokus" else "Aktifkan mode fokus", true
+              ) {
+                focus = !focus
+                focusLabel.text =
+                  "●  MODE FOKUS  ·  ${if (focus) "AKTIF" else "NONAKTIF"}"
+                focusLabel.setTextColor(if (focus) blue else muted)
+              }, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = 12
               })
-              root.addView(Button(this).apply {
-                text = "Buka Flow"
-                setOnClickListener {
-                  packageManager.getLaunchIntentForPackage(packageName)?.let {
-                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(it)
-                  }
+
+              root.addView(action("BUKA FLOW") {
+                packageManager.getLaunchIntentForPackage(packageName)?.let {
+                  it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                  startActivity(it)
                 }
+              }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 8 })
+
+              val controls = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+              }
+              controls.addView(action("Sembunyikan logo") {
+                hideBubble()
+              }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 4 })
+              controls.addView(action("Tampilkan logo") {
+                showBubble()
+              }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 4 })
+              root.addView(controls, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = 8
               })
-              root.addView(Button(this).apply {
-                text = "Tutup panel"
-                setOnClickListener { hidePanel() }
+
+              root.addView(action("HENTIKAN FLOW") {
+                stopSelf()
+              }, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = 8
               })
 
               panel = root
               wm.addView(root, layout(
-                280, WindowManager.LayoutParams.WRAP_CONTENT,
+                320, WindowManager.LayoutParams.WRAP_CONTENT,
                 Gravity.TOP or Gravity.END
               ).apply { x = 14; y = 100 })
 
@@ -357,8 +464,7 @@ jobs:
 
             override fun onDestroy() {
               hidePanel()
-              bubble?.let { try { wm.removeView(it) } catch (_: Exception) {} }
-              bubble = null
+              hideBubble()
               super.onDestroy()
             }
           }
