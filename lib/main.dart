@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:ui' show FontFeature;
 import 'package:flutter/services.dart';
 
 void main() => runApp(const FlowApp());
 
-const bg = Color(0xFF080D18);
-const panel = Color(0xFF111B2C);
-const cyan = Color(0xFF59E1F2);
-const blue = Color(0xFF6585FF);
-const white = Color(0xFFF0F5FF);
-const muted = Color(0xFF8493AA);
+const bg = Color(0xFFF5F6F7);
+const panel = Color(0xFFFFFFFF);
+const cyan = Color(0xFF187A58);
+const blue = Color(0xFF356B58);
+const white = Color(0xFF171B19);
+const muted = Color(0xFF737B77);
 const bridge = MethodChannel('com.egii.flow/games');
 
 class FlowApp extends StatelessWidget {
@@ -22,11 +23,11 @@ class FlowApp extends StatelessWidget {
     title: 'Flow Game Optimizer V2',
     theme: ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: bg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: cyan,
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
       ),
       fontFamily: 'sans-serif',
     ),
@@ -72,6 +73,10 @@ class _FlowHomeState extends State<FlowHome> {
             onProfile: (v) => setState(() => profile = v),
             onTab: (v) => setState(() => tab = v),
           ),
+          CommandDeckPage(
+            profile: profile,
+            onProfile: (v) => setState(() => profile = v),
+          ),
           const GamesPage(),
           const AimPage(),
           const SettingsPage(),
@@ -81,10 +86,11 @@ class _FlowHomeState extends State<FlowHome> {
     bottomNavigationBar: NavigationBar(
       selectedIndex: tab,
       onDestinationSelected: (v) => setState(() => tab = v),
-      backgroundColor: const Color(0xFF0D1524),
-      indicatorColor: cyan.withValues(alpha: .16),
+      backgroundColor: Colors.white,
+      indicatorColor: const Color(0xFFE1F0E9),
       destinations: const [
         NavigationDestination(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+        NavigationDestination(icon: Icon(Icons.bolt_rounded), label: 'Deck'),
         NavigationDestination(icon: Icon(Icons.sports_esports_rounded), label: 'Games'),
         NavigationDestination(icon: Icon(Icons.gps_fixed_rounded), label: 'Aim Lab'),
         NavigationDestination(icon: Icon(Icons.tune_rounded), label: 'Settings'),
@@ -94,14 +100,14 @@ class _FlowHomeState extends State<FlowHome> {
 }
 
 BoxDecoration glass({double radius = 22}) => BoxDecoration(
-  color: Colors.white.withValues(alpha: .045),
+  color: Colors.white,
   borderRadius: BorderRadius.circular(radius),
-  border: Border.all(color: Colors.white.withValues(alpha: .09)),
+  border: Border.all(color: const Color(0xFFE2E8E4)),
   boxShadow: [
     BoxShadow(
-      color: Colors.black.withValues(alpha: .18),
-      blurRadius: 24,
-      offset: const Offset(0, 10),
+      color: const Color(0xFF18392B).withValues(alpha: .045),
+      blurRadius: 16,
+      offset: const Offset(0, 5),
     ),
   ],
 );
@@ -145,10 +151,10 @@ class HomePage extends StatelessWidget {
         Container(
           width: 46, height: 46,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [cyan, blue]),
+            color: const Color(0xFF187A58),
             borderRadius: BorderRadius.circular(15),
           ),
-          child: const Icon(Icons.bolt_rounded, color: bg, size: 30),
+          child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 30),
         ),
         const SizedBox(width: 12),
         const Expanded(child: Column(
@@ -180,11 +186,8 @@ class HomePage extends StatelessWidget {
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF172C48), Color(0xFF101827), Color(0xFF18213B)],
-          ),
-          border: Border.all(color: cyan.withValues(alpha: .24)),
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFDCE5DF)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -204,9 +207,9 @@ class HomePage extends StatelessWidget {
                 selected: profile == p,
                 onSelected: (_) => onProfile(p),
                 selectedColor: cyan,
-                backgroundColor: Colors.white.withValues(alpha: .05),
+                backgroundColor: const Color(0xFFF2F5F3),
                 labelStyle: TextStyle(
-                  color: profile == p ? bg : white,
+                  color: profile == p ? Colors.white : white,
                   fontSize: 11, fontWeight: FontWeight.w700,
                 ),
                 side: BorderSide(
@@ -230,14 +233,14 @@ class HomePage extends StatelessWidget {
           icon: Icons.sports_esports_rounded,
           title: 'Game Library',
           subtitle: 'Launch installed apps',
-          onTap: () => onTab(1),
+          onTap: () => onTab(2),
         )),
         const SizedBox(width: 12),
         Expanded(child: ToolTile(
           icon: Icons.gps_fixed_rounded,
           title: 'Aim Lab',
           subtitle: 'Reaction training',
-          onTap: () => onTab(2),
+          onTap: () => onTab(3),
         )),
       ]),
       const SizedBox(height: 14),
@@ -475,6 +478,231 @@ class _GamesPageState extends State<GamesPage> {
       ],
     );
   }
+}
+
+
+class CommandDeckPage extends StatefulWidget {
+final String profile;
+final ValueChanged<String> onProfile;
+
+const CommandDeckPage({
+super.key,
+required this.profile,
+required this.onProfile,
+});
+
+@override
+State<CommandDeckPage> createState() => _CommandDeckPageState();
+}
+
+class _CommandDeckPageState extends State<CommandDeckPage> {
+final Stopwatch watch = Stopwatch();
+Timer? ticker;
+List<GameInfo> games = [];
+bool loading = true;
+String? error;
+
+@override
+void initState() {
+super.initState();
+loadGames();
+}
+
+Future<void> loadGames() async {
+try {
+final raw = await bridge.invokeMethod<List<dynamic>>('getGames');
+final found = (raw ?? [])
+.whereType<Map>()
+.map((m) => GameInfo.fromMap(m))
+.toList()
+..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+if (mounted) setState(() {
+games = found;
+loading = false;
+error = null;
+});
+} catch (e) {
+if (mounted) setState(() {
+loading = false;
+error = 'Could not load installed apps.';
+});
+}
+}
+
+void startTimer() {
+if (watch.isRunning) return;
+watch.start();
+ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+if (mounted) setState(() {});
+});
+setState(() {});
+}
+
+void pauseTimer() {
+watch.stop();
+setState(() {});
+}
+
+void resetTimer() {
+watch
+..stop()
+..reset();
+setState(() {});
+}
+
+String get elapsed {
+final d = watch.elapsed;
+final h = d.inHours.toString().padLeft(2, '0');
+final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+final sec = (d.inSeconds % 60).toString().padLeft(2, '0');
+return '$h:$m:$sec';
+}
+
+Future<void> launch(GameInfo game) async {
+try {
+await bridge.invokeMethod('launchGame', {'packageName': game.packageName});
+} catch (_) {
+if (!mounted) return;
+ScaffoldMessenger.of(context).showSnackBar(
+const SnackBar(content: Text('Game could not be opened.')),
+);
+}
+}
+
+@override
+void dispose() {
+ticker?.cancel();
+watch.stop();
+super.dispose();
+}
+
+@override
+Widget build(BuildContext context) => ListView(
+padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+children: [
+heading('Command Deck', 'Your gaming session, in one place.'),
+const SizedBox(height: 20),
+Container(
+padding: const EdgeInsets.all(22),
+decoration: glass(radius: 24),
+child: Column(
+crossAxisAlignment: CrossAxisAlignment.start,
+children: [
+label('SESSION TIMER'),
+const SizedBox(height: 8),
+Text(elapsed, style: const TextStyle(
+color: white, fontSize: 36, fontWeight: FontWeight.w800,
+fontFeatures: [FontFeature.tabularFigures()],
+)),
+const SizedBox(height: 16),
+Row(children: [
+Expanded(child: FilledButton.icon(
+onPressed: watch.isRunning ? null : startTimer,
+icon: const Icon(Icons.play_arrow_rounded),
+label: const Text('Start'),
+style: FilledButton.styleFrom(backgroundColor: cyan),
+)),
+const SizedBox(width: 8),
+Expanded(child: OutlinedButton.icon(
+onPressed: watch.isRunning ? pauseTimer : null,
+icon: const Icon(Icons.pause_rounded),
+label: const Text('Pause'),
+)),
+IconButton(
+onPressed: resetTimer,
+tooltip: 'Reset timer',
+icon: const Icon(Icons.restart_alt_rounded, color: cyan),
+),
+]),
+],
+),
+),
+const SizedBox(height: 20),
+Container(
+padding: const EdgeInsets.all(20),
+decoration: glass(),
+child: Column(
+crossAxisAlignment: CrossAxisAlignment.start,
+children: [
+label('SESSION PROFILE'),
+const SizedBox(height: 12),
+Text(widget.profile, style: const TextStyle(
+color: white, fontSize: 22, fontWeight: FontWeight.w800,
+)),
+const SizedBox(height: 12),
+Wrap(spacing: 8, children: [
+for (final name in ['Balanced', 'Performance', 'Battery Saver'])
+ChoiceChip(
+label: Text(name),
+selected: widget.profile == name,
+onSelected: (_) => widget.onProfile(name),
+selectedColor: const Color(0xFFE1F0E9),
+labelStyle: TextStyle(
+color: widget.profile == name ? cyan : white,
+fontSize: 11,
+),
+showCheckmark: false,
+),
+]),
+const SizedBox(height: 10),
+const Text(
+'Pilihan profil hanya menyimpan preferensi sesi di tampilan. '
+'Profil ini tidak mengubah clock CPU/GPU atau menjamin FPS lebih tinggi.',
+style: TextStyle(color: muted, fontSize: 12, height: 1.5),
+),
+],
+),
+),
+const SizedBox(height: 20),
+Row(children: [
+Expanded(child: heading('Quick launch', 'Open an installed app.')),
+IconButton(
+onPressed: loading ? null : loadGames,
+icon: const Icon(Icons.refresh_rounded, color: cyan),
+),
+]),
+const SizedBox(height: 10),
+if (loading)
+const Center(child: Padding(
+padding: EdgeInsets.all(24),
+child: CircularProgressIndicator(color: cyan),
+))
+else if (error != null)
+Text(error!, style: const TextStyle(color: muted))
+else if (games.isEmpty)
+const Text(
+'No launchable apps found. Open Game Library to check app visibility.',
+style: TextStyle(color: muted, height: 1.5),
+)
+else
+for (final game in games.take(6))
+Container(
+margin: const EdgeInsets.only(bottom: 9),
+padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+decoration: glass(radius: 16),
+child: Row(children: [
+Expanded(child: Column(
+crossAxisAlignment: CrossAxisAlignment.start,
+children: [
+Text(game.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+style: const TextStyle(color: white, fontWeight: FontWeight.w700)),
+const SizedBox(height: 3),
+Text(game.packageName, maxLines: 1, overflow: TextOverflow.ellipsis,
+style: const TextStyle(color: muted, fontSize: 10)),
+],
+)),
+IconButton.filled(
+onPressed: () => launch(game),
+style: IconButton.styleFrom(
+backgroundColor: cyan,
+foregroundColor: Colors.white,
+),
+icon: const Icon(Icons.play_arrow_rounded),
+),
+]),
+),
+],
+);
 }
 
 class AimPage extends StatefulWidget {
