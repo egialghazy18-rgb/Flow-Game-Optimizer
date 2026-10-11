@@ -94,7 +94,20 @@ jobs:
                           val launch = packageManager.getLaunchIntentForPackage(pkg)
                           if (launch == null) {
                             result.error("NOT_LAUNCHABLE", "No launch activity found", null)
+                          } else if (Build.VERSION.SDK_INT >= 23 &&
+                                     !android.provider.Settings.canDrawOverlays(this)) {
+                            val permissionIntent = Intent(
+                              android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                              android.net.Uri.parse("package:$packageName")
+                            )
+                            startActivity(permissionIntent)
+                            result.error(
+                              "OVERLAY_PERMISSION_REQUIRED",
+                              "Aktifkan Display over other apps, lalu tekan Launch lagi.",
+                              null
+                            )
                           } else {
+                            startService(Intent(this, FlowOverlayService::class.java))
                             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             startActivity(launch)
                             result.success(true)
@@ -129,15 +142,237 @@ jobs:
           }
           KOTLIN
 
-          MANIFEST=android/app/src/main/AndroidManifest.xml
           python3 - <<'PY'
           from pathlib import Path
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
-          marker = '<manifest'
-          if 'android.permission.QUERY_ALL_PACKAGES' not in s:
-              pos = s.find('>')
-              s = s[:pos+1] + '\n    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />' + s[pos+1:]
+          start = s.find("<manifest")
+          end = s.find(">", start)
+          if start < 0 or end < 0:
+              raise SystemExit("Tag <manifest> tidak ditemukan")
+          for perm in (
+              "android.permission.QUERY_ALL_PACKAGES",
+              "android.permission.SYSTEM_ALERT_WINDOW",
+          ):
+              if perm not in s:
+                  s = s[:end+1] + '\n    <uses-permission android:name="' + perm + '" />' + s[end+1:]
+                  end = s.find(">", s.find("<manifest"))
+          p.write_text(s)
+          print("Izin manifest akan dipasang saat workflow berjalan.")
+          PY
+
+      - name: Add Flow overlay service
+        shell: bash
+        run: |
+          cat > android/app/src/main/kotlin/com/egii/flowv2/flow_game_optimizer_v2/FlowOverlayService.kt <<'KOTLIN'
+          package com.egii.flowv2.flow_game_optimizer_v2
+
+          import android.app.Service
+          import android.content.Intent
+          import android.content.IntentFilter
+          import android.graphics.Color
+          import android.graphics.PixelFormat
+          import android.graphics.Typeface
+          import android.graphics.drawable.GradientDrawable
+          import android.os.Build
+          import android.os.IBinder
+          import android.os.SystemClock
+          import android.provider.Settings
+          import android.view.Gravity
+          import android.view.MotionEvent
+          import android.view.View
+          import android.view.WindowManager
+          import android.widget.Button
+          import android.widget.LinearLayout
+          import android.widget.TextView
+
+          class FlowOverlayService : Service() {
+            private lateinit var wm: WindowManager
+            private var bubble: TextView? = null
+            private var panel: LinearLayout? = null
+            private var focus = false
+            private val startedAt = SystemClock.elapsedRealtime()
+
+            override fun onBind(intent: Intent?): IBinder? = null
+
+            override fun onCreate() {
+              super.onCreate()
+              if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+                stopSelf()
+                return
+              }
+              wm = getSystemService(WINDOW_SERVICE) as WindowManager
+              showBubble()
+            }
+
+            private fun windowType() =
+              if (Build.VERSION.SDK_INT >= 26)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+              else WindowManager.LayoutParams.TYPE_PHONE
+
+            private fun layout(w: Int, h: Int, gravity: Int) =
+              WindowManager.LayoutParams(
+                w, h, windowType(),
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT
+              ).apply { this.gravity = gravity }
+
+            private fun showBubble() {
+              val v = TextView(this).apply {
+                text = "F"
+                textSize = 22f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                typeface = Typeface.DEFAULT_BOLD
+                background = GradientDrawable().apply {
+                  shape = GradientDrawable.OVAL
+                  setColor(Color.rgb(20, 105, 255))
+                  setStroke(3, Color.rgb(110, 190, 255))
+                }
+                setOnClickListener {
+                  if (panel == null) showPanel() else hidePanel()
+                }
+              }
+              bubble = v
+              val lp = layout(58, 58, Gravity.TOP or Gravity.START).apply {
+                x = 20
+                y = 180
+              }
+              v.setOnTouchListener(object : View.OnTouchListener {
+                var downX = 0f
+                var downY = 0f
+                var startX = 0
+                var startY = 0
+                var dragging = false
+                override fun onTouch(view: View, event: MotionEvent): Boolean {
+                  val params = view.layoutParams as WindowManager.LayoutParams
+                  when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                      downX = event.rawX
+                      downY = event.rawY
+                      startX = params.x
+                      startY = params.y
+                      dragging = false
+                      return false
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                      val dx = (event.rawX - downX).toInt()
+                      val dy = (event.rawY - downY).toInt()
+                      if (kotlin.math.abs(dx) > 8 || kotlin.math.abs(dy) > 8) dragging = true
+                      if (dragging) {
+                        params.x = startX + dx
+                        params.y = startY + dy
+                        wm.updateViewLayout(view, params)
+                      }
+                      return dragging
+                    }
+                  }
+                  return false
+                }
+              })
+              wm.addView(v, lp)
+            }
+
+            private fun showPanel() {
+              val root = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(18, 14, 18, 14)
+                background = GradientDrawable().apply {
+                  cornerRadius = 22f
+                  setColor(Color.rgb(20, 26, 38))
+                  setStroke(2, Color.rgb(40, 115, 255))
+                }
+              }
+              fun text(value: String, size: Float = 14f) =
+                TextView(this).apply {
+                  this.text = value
+                  textSize = size
+                  setTextColor(Color.WHITE)
+                  setPadding(0, 6, 0, 6)
+                }
+
+              root.addView(text("FLOW  •  GAME PANEL", 18f))
+              val timer = text("Sesi: 00:00:00")
+              root.addView(timer)
+              root.addView(text("FPS: Tidak tersedia"))
+
+              val battery = registerReceiver(
+                null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+              )
+              val level = battery?.getIntExtra("level", -1) ?: -1
+              val scale = battery?.getIntExtra("scale", -1) ?: -1
+              val temp = battery?.getIntExtra("temperature", -1) ?: -1
+              val pct = if (level >= 0 && scale > 0)
+                "${level * 100 / scale}%" else "Tidak tersedia"
+              val tempText = if (temp >= 0)
+                String.format("%.1f°C", temp / 10.0) else "Tidak tersedia"
+
+              root.addView(text("Baterai: $pct"))
+              root.addView(text("Suhu baterai: $tempText"))
+              val focusLabel = text("Mode fokus: ${if (focus) "Aktif" else "Nonaktif"}")
+              root.addView(focusLabel)
+              root.addView(Button(this).apply {
+                text = "Toggle mode fokus"
+                setOnClickListener {
+                  focus = !focus
+                  focusLabel.text = "Mode fokus: ${if (focus) "Aktif" else "Nonaktif"}"
+                }
+              })
+              root.addView(Button(this).apply {
+                text = "Buka Flow"
+                setOnClickListener {
+                  packageManager.getLaunchIntentForPackage(packageName)?.let {
+                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(it)
+                  }
+                }
+              })
+              root.addView(Button(this).apply {
+                text = "Tutup panel"
+                setOnClickListener { hidePanel() }
+              })
+
+              panel = root
+              wm.addView(root, layout(
+                280, WindowManager.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.END
+              ).apply { x = 14; y = 100 })
+
+              root.post(object : Runnable {
+                override fun run() {
+                  if (panel !== root) return
+                  val sec = (SystemClock.elapsedRealtime() - startedAt) / 1000
+                  timer.text = "Sesi: %02d:%02d:%02d".format(
+                    sec / 3600, (sec % 3600) / 60, sec % 60
+                  )
+                  root.postDelayed(this, 1000)
+                }
+              })
+            }
+
+            private fun hidePanel() {
+              panel?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+              panel = null
+            }
+
+            override fun onDestroy() {
+              hidePanel()
+              bubble?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+              bubble = null
+              super.onDestroy()
+            }
+          }
+          KOTLIN
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          if "FlowOverlayService" not in s:
+              pos = s.find("</application>")
+              if pos < 0:
+                  raise SystemExit("Tag </application> tidak ditemukan")
+              s = s[:pos] + '        <service android:name=".FlowOverlayService" android:exported="false" />' + chr(10) + '    ' + s[pos:]
           p.write_text(s)
           PY
 
