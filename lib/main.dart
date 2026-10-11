@@ -19,7 +19,7 @@ class FlowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    title: 'Flow Game Optimizer',
+    title: 'Flow Game Optimizer V2',
     theme: ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -190,7 +190,7 @@ class HomePage extends StatelessWidget {
           Row(children: [
             const Icon(Icons.memory_rounded, color: cyan, size: 18),
             const SizedBox(width: 8),
-            label('Gaming profile'),
+            label('SESSION PRESET'),
           ]),
           const SizedBox(height: 15),
           Text(profile, style: const TextStyle(
@@ -223,20 +223,20 @@ class HomePage extends StatelessWidget {
         ]),
       ),
       const SizedBox(height: 26),
-      label('Your tools'),
+      label('QUICK ACCESS'),
       const SizedBox(height: 13),
       Row(children: [
         Expanded(child: ToolTile(
           icon: Icons.sports_esports_rounded,
           title: 'Game Library',
-          subtitle: 'Installed apps',
+          subtitle: 'Launch installed apps',
           onTap: () => onTab(1),
         )),
         const SizedBox(width: 12),
         Expanded(child: ToolTile(
           icon: Icons.gps_fixed_rounded,
-          title: 'FPS Arena',
-          subtitle: 'Aim practice',
+          title: 'Aim Lab',
+          subtitle: 'Reaction training',
           onTap: () => onTab(2),
         )),
       ]),
@@ -544,7 +544,7 @@ class _AimPageState extends State<AimPage> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
     children: [
-      heading('FPS Arena', 'Train your reaction and accuracy.'),
+      heading('Aim Lab', 'Train your reaction and accuracy.'),
       const SizedBox(height: 20),
       Row(children: [
         _stat('TIME', '$seconds s'),
@@ -661,10 +661,10 @@ class SettingsPage extends StatelessWidget {
           children: [
             Icon(Icons.bolt_rounded, color: cyan, size: 30),
             SizedBox(height: 14),
-            Text('Flow Game Optimizer', style: TextStyle(
+            Text('Flow Game Optimizer V2', style: TextStyle(
               color: white, fontSize: 18, fontWeight: FontWeight.w800)),
             SizedBox(height: 8),
-            Text('Version 2.0 • Dark Liquid Glass',
+            Text('Version 2.1 • V2 package verification',
               style: TextStyle(color: muted)),
             SizedBox(height: 14),
             Text(

@@ -26,15 +26,15 @@ jobs:
 
       - name: Generate Android project
         run: |
-          flutter create --platforms=android --project-name flow_game_optimizer --org com.egii.flow .
+          flutter create --platforms=android --project-name flow_game_optimizer_v2 --org com.egii.flowv2 .
           rm -f test/widget_test.dart
 
       - name: Add native Game Library bridge
         shell: bash
         run: |
-          mkdir -p android/app/src/main/kotlin/com/egii/flow/flow_game_optimizer
-          cat > android/app/src/main/kotlin/com/egii/flow/flow_game_optimizer/MainActivity.kt <<'KOTLIN'
-          package com.egii.flow.flow_game_optimizer
+          mkdir -p android/app/src/main/kotlin/com/egii/flowv2/flow_game_optimizer_v2
+          cat > android/app/src/main/kotlin/com/egii/flowv2/flow_game_optimizer_v2/MainActivity.kt <<'KOTLIN'
+          package com.egii.flowv2.flow_game_optimizer_v2
 
           import android.content.Intent
           import android.content.pm.PackageManager
@@ -152,5 +152,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Flow-Game-Optimizer-APK
+          name: Flow-Game-Optimizer-V2-APK
           path: build/app/outputs/flutter-apk/app-release.apk
